@@ -46,13 +46,12 @@ export default class Client {
       }
       try {
         const payload = JSON.parse(message);
-        console.log(payload);
         const parsedPayload = await runTaskReceiptSchema.parseAsync(payload);
         const runTask = this.runTasks.get(parsedPayload.id);
         if (runTask) {
           runTask(parsedPayload);
         } else {
-          console.log("received orphaned run payload from client");
+          console.log("received orphaned packet from client");
         }
       } catch {
         console.error("malformed packet from client");
@@ -60,30 +59,16 @@ export default class Client {
     });
   }
 
-  async evaluate(
-    lua: string,
-    schema: ZodSchema,
-    timeout?: number
-  ): Promise<typeof schema._type> {
-    return new Promise<typeof schema>((resolve, reject) => {
+  async evaluate<T>(lua: string, schema?: ZodSchema): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
       const taskID = uuidv4();
       const header = `-- ${taskID}`;
       if (!this.socket.OPEN) reject("socket closed");
-      this.socket.send(`${header}\n${lua}`, (err) => {
-        if (err) {
-          reject(err);
-        }
-      });
       this.runTasks.set(taskID, (payload: RunTaskReceipt) => {
-        schema
-          .parseAsync(payload.payload)
-          .then((parsedPayload) => {
-            resolve(parsedPayload);
-          })
-          .catch((error) => {
-            reject(error);
-          });
+        if (schema) resolve(schema.parse(payload.payload));
+        else resolve(payload.payload as T);
       });
+      this.socket.send(`${header}\n${lua}`);
     });
   }
 }

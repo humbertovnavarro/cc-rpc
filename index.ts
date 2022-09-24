@@ -1,22 +1,21 @@
 import Server from "./interfaces/server";
-import Client from "./interfaces/client";
 import { z } from "zod";
+import ComputerCraftClient from "./interfaces/computer-craft-client";
 const server = new Server({
   tokenSecret: "test",
   port: 8080,
 });
 async function main() {
   await server.login();
-  server.onConnection = async (client: Client) => {
+  server.onConnection = async (client: ComputerCraftClient) => {
     setInterval(async () => {
       try {
-        let now = Date.now();
-        await client.evaluate("return {hello = 1}", z.any());
-        console.log(`finished in ${Date.now() - now}ms`);
+        console.log(await client.os().computerID());
+        console.log(await client.os().time());
       } catch (error) {
         console.error(error);
       }
-    }, 3000);
+    }, 1000);
   };
 }
 main();

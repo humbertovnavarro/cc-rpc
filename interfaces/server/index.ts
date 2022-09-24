@@ -1,6 +1,7 @@
 import { WebSocketServer, WebSocket as BaseWebSocket, RawData } from "ws";
 import Client from "../client";
 import jwt from "jsonwebtoken";
+import ComputerCraftClient from "../computer-craft-client";
 
 interface ServerOptions {
   port: number;
@@ -11,10 +12,10 @@ const MAX_AUTH_TRIES = 5;
 
 export default class Server {
   tokenSecret: string;
-  clients: Map<string, Client> = new Map();
+  clients: Map<string, ComputerCraftClient> = new Map();
   port: number;
   wss?: WebSocketServer;
-  onConnection?: (client: Client) => unknown;
+  onConnection?: (client: ComputerCraftClient) => unknown;
   callback?: () => void;
   constructor(opts: ServerOptions) {
     this.tokenSecret = opts.tokenSecret;
@@ -45,7 +46,7 @@ export default class Server {
             this.tokenSecret
           ) as jwt.JwtPayload;
           const id = token.sub || "anonymous";
-          const client = new Client({
+          const client = new ComputerCraftClient({
             server: this,
             socket,
             debug: true,
